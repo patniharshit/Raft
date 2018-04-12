@@ -12,7 +12,7 @@ class client(object):
     def __init__(self):
         client.cnt = client.cnt+1
         self.id = client.cnt
-        self.num_of_reply = 0 
+        self.num_of_reply = 0
 
     def buyTickets(self, port, buy_msg, uuid):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -28,7 +28,7 @@ class client(object):
                     break
             except Exception as e:
                 print 'Connection refused'
- 
+
         s.close()
 
     def show_state(self, port):

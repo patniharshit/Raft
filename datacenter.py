@@ -182,7 +182,7 @@ class Server(object):
 			self.follower_state.start()
 
 	def load(self):
-		initial_running = [1,2,3]
+		initial_running = [1,2,3,4,5]
 		# new_quorom = []
 
 		try:
@@ -220,6 +220,3 @@ class Server(object):
 
 		# print 'Now I am the leader for term %d' % self.currentTerm
 		# self.leader_state.start()
-			
-
-
