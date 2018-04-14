@@ -1,0 +1,9 @@
+0. run clear.sh
+1. fire up 3 servers, one of them must be choosen leader
+2. python client.py and try buying tickets from each of the servers
+3. buy 100 tickets, after this no more tickets are allowed to be bought
+4. close the current leader
+5. open up one more server
+6. new leader must be elected
+7. repeat step 3
+8. check if log of new server must be same as previous servers

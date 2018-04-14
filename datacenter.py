@@ -122,7 +122,7 @@ class Server(object):
 			for peer in self.peers:
 	 			if peer in self.request_votes:
 	 				Msg = str(self.lastLogTerm) + ' ' + str(self.lastLogIndex)
-	 				msg = RequestVoteMsg(sender, peer, self.currentTerm, Msg)
+	 				msg = BaseMessage(sender, peer, self.currentTerm, Msg, reqtype="RequestVote")
 	 				data = pickle.dumps(msg)
 	 				sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	 				sock.sendto(data, ("", self.addressbook[peer]))

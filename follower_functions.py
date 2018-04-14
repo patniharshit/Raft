@@ -111,7 +111,7 @@ def vote_response(server,Msg):
 			server.save()
 
 	reply = str(voteGranted)
-	reply_msg = VoteResponseMsg(server.id, _sender, server.currentTerm, reply)
+	reply_msg = BaseMessage(server.id, _sender, server.currentTerm, reply, reqtype="RequestVoteResponse")
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.sendto(pickle.dumps(reply_msg), ("",server.addressbook[_sender]))
 
