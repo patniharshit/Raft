@@ -59,7 +59,9 @@ def buy_ticket(server,Msg,addr):
 	s.sendto(msgPass, addr)
 	s.close()
 	server.log.append(newEntry)
-	server.save()
+	serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+	with open(server.config_file, 'w') as f:
+		pickle.dump(serverConfig, f)
 
 	return 1
 
@@ -90,7 +92,9 @@ def vote_response(server,Msg):
 		if (server.votedFor == _sender or server.votedFor == -1) and log_info >= (server.lastLogTerm, server.lastLogIndex) :
 			server.votedFor = _sender
 			voteGranted = 1
-			server.save()
+			serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+			with open(server.config_file, 'w') as f:
+				pickle.dump(serverConfig, f)
 		else:
 			voteGranted = 0
 
@@ -101,14 +105,18 @@ def vote_response(server,Msg):
 	else:
 		# find higher term in RequestVoteMsg
 		server.currentTerm = _term
-		server.save()
+		serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+		with open(server.config_file, 'w') as f:
+			pickle.dump(serverConfig, f)
 		server.step_down()
 		if log_info < (server.lastLogTerm, server.lastLogIndex):
 			voteGranted = 0
 		else :
 			server.votedFor = _sender
 			voteGranted = 1
-			server.save()
+			serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+			with open(server.config_file, 'w') as f:
+				pickle.dump(serverConfig, f)
 
 	reply = str(voteGranted)
 	reply_msg = BaseMessage(server.id, _sender, server.currentTerm, reply, reqtype="RequestVoteResponse")
@@ -169,7 +177,9 @@ def acceptor(server, data, addr):
 			print 'vote rejected by ', _sender
 			if server.currentTerm < _term: # discover higher term
 				server.currentTerm = _term
-				server.save()
+				serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+				with open(server.config_file, 'w') as f:
+					pickle.dump(serverConfig, f)
 				if server.role == 'candidate':
 					server.step_down()
 
@@ -187,7 +197,9 @@ def acceptor(server, data, addr):
 		# This is a valid new leader
 		if server.currentTerm <= _term:
 			server.currentTerm = _term
-			server.save()
+			serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+			with open(server.config_file, 'w') as f:
+				pickle.dump(serverConfig, f)
 			server.step_down()
 			if server.role == 'follower':
 				server.last_update = time.time()
@@ -210,7 +222,9 @@ def acceptor(server, data, addr):
 								server.peers = server.new[:]
 								server.peers.remove(server.id)
 								print 'follower applied new config, running peers', server.peers
-								server.save()
+								serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+								with open(server.config_file, 'w') as f:
+									pickle.dump(serverConfig, f)
 					else:
 						success = 'False'
 				else:
@@ -231,7 +245,9 @@ def acceptor(server, data, addr):
 						server.peers.remove(server.id)
 						print 'follower applied new config, running peers', server.peers
 
-					server.save()
+					serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+					with open(server.config_file, 'w') as f:
+						pickle.dump(serverConfig, f)
 					matchIndex = len(server.log)
 				server.leaderID = _sender
 		else:
@@ -258,7 +274,9 @@ def acceptor(server, data, addr):
 		if success == 'False':
 			if _term > server.currentTerm:
 				server.currentTerm = _term
-				server.save()
+				serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+				with open(server.config_file, 'w') as f:
+					pickle.dump(serverConfig, f)
 				server.step_down()
 			else:
 				server.nextIndex[_sender] -= 1
@@ -279,7 +297,9 @@ def acceptor(server, data, addr):
 					if compare == server.majority and server.log[N-1].term == server.currentTerm:
 						for idx in range(server.commitIndex + 1, N + 1):
 							server.poolsize -= server.log[idx-1].command
-							server.save()
+							serverConfig = ServerConfig(server.poolsize, server.currentTerm, server.votedFor, server.log, server.peers)
+							with open(server.config_file, 'w') as f:
+								pickle.dump(serverConfig, f)
 							s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 							s.sendto('Your request is fullfilled',server.log[idx-1].addr)
 							s.close()

@@ -67,7 +67,10 @@ class Server(object):
 			return
 		self.currentTerm += 1
 		self.votedFor = self.id
-		self.save()
+		serverConfig = ServerConfig(self.poolsize, self.currentTerm, self.votedFor, self.log, self.peers)
+		with open(self.config_file, 'w') as f:
+			pickle.dump(serverConfig, f)
+
 		self.numVotes = 1
 		self.election.start()
 
@@ -101,20 +104,19 @@ class Server(object):
 		while True:
 			receipts = self.peers[:]
 			for peer in receipts:
-				if len(self.log) >= self.nextIndex[peer]:
-					prevLogIndex = self.nextIndex[peer] - 1
-					if prevLogIndex != 0:
-						prevLogTerm = self.log[prevLogIndex-1].term
-					else:
-						prevLogTerm = 0
-					entries = [self.log[self.nextIndex[peer]-1]]
-				else:
+				if len(self.log) < self.nextIndex[peer]:
 					entries = []
 					prevLogIndex = len(self.log)
+					prevLogTerm = 0
 					if prevLogIndex != 0:
 						prevLogTerm = self.log[prevLogIndex-1].term
-					else:
-						prevLogTerm = 0
+				else:
+					prevLogIndex = self.nextIndex[peer] - 1
+					prevLogTerm = 0
+					if prevLogIndex != 0:
+						prevLogTerm = self.log[prevLogIndex-1].term
+					entries = [self.log[prevLogIndex]]
+
 
 				Msg = AppendEntriesMsg(self.id, peer, self.currentTerm, entries, self.commitIndex, prevLogIndex, prevLogTerm)
 				data = pickle.dumps(Msg)
@@ -134,16 +136,13 @@ class Server(object):
 			self.role = 'follower'
 
 	def load(self):
-		initial_running = [1,2,3,4,5]
 		try:
 			with open(self.config_file) as f:
 				serverConfig = pickle.load(f)
 		except Exception as e:
-			if self.id not in initial_running:
-				serverConfig = ServerConfig(100, 0, -1, [], [])
-			else:
-				initial_running.remove(self.id)
-				serverConfig = ServerConfig(100, 0, -1, [], initial_running)
+			initial_running = [i+1 for i in range(5)]
+			initial_running.remove(self.id)
+			serverConfig = ServerConfig(100, 0, -1, [], initial_running)
 
 		self.poolsize = serverConfig.poolsize
 		self.currentTerm = serverConfig.currentTerm
@@ -151,11 +150,6 @@ class Server(object):
 		self.log = serverConfig.log
 		self.peers = serverConfig.peers
 		self.majority = (len(self.peers) + 1)/2 + 1
-
-	def save(self):
-		serverConfig = ServerConfig(self.poolsize, self.currentTerm, self.votedFor, self.log, self.peers)
-		with open(self.config_file, 'w') as f:
-			pickle.dump(serverConfig, f)
 
 	def run(self):
 		time.sleep(1)
