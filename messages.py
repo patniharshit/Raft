@@ -31,7 +31,6 @@ class AppendEntriesResponseMsg(BaseMessage):
         self.matchIndex = matchIndex
 
 class LogEntry(object):
-
     def __init__(self, term, command, addr, uuid, _type = 0):
         self.term = term
         self.command = command
@@ -40,7 +39,6 @@ class LogEntry(object):
         self.type = _type
 
 class Request(object):
-    """docstring for Request"""
     def __init__(self, request_msg, uuid = 0, addr=None, reqtype='client'):
         self.request_msg = request_msg
         self.type = reqtype
