@@ -200,14 +200,12 @@ def acceptor(server, data, addr):
 							server.log = server.log[:prevLogIndex] + entries
 							matchIndex = len(server.log)
 							if entries[0].type == 1:
-								server.during_change = 1
 								server.new = entries[0].command.new_config[:]
 								server.old = server.peers[:]
 								server.old.append(server.id)
 								server.peers = list(set(server.old + server.new))
 								server.peers.remove(server.id)
 							elif entries[0].type == 2:
-								server.during_change = 2
 								server.new = entries[0].command.new_config[:]
 								server.peers = server.new[:]
 								server.peers.remove(server.id)
@@ -222,14 +220,12 @@ def acceptor(server, data, addr):
 				if len(entries) != 0:
 					server.log = server.log[:prevLogIndex] + entries
 					if entries[0].type == 1:
-						server.during_change = 1
 						server.new = entries[0].command.new_config[:]
 						server.old = server.peers[:]
 						server.old.append(server.id)
 						server.peers = list(set(server.old + server.new))
 						server.peers.remove(server.id)
 					elif entries[0].type == 2:
-						server.during_change = 2
 						server.new = entries[0].command.new_config[:]
 						server.peers = server.new[:]
 						server.peers.remove(server.id)
@@ -249,8 +245,6 @@ def acceptor(server, data, addr):
 				for idx in range(1, server.commitIndex + 1):
 					if server.log[idx-1].type == 0:
 						server.poolsize -= server.log[idx - 1].command
-					elif server.log[idx-1].type == 2:
-						server.during_change = 0
 
 		reply_msg = AppendEntriesResponseMsg(server.id, _sender, server.currentTerm, success, matchIndex)
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -276,78 +270,18 @@ def acceptor(server, data, addr):
 			if server.commitIndex < max(server.matchIndex.values()):
 				start = server.commitIndex + 1
 				for N in range(start,max(server.matchIndex.values()) + 1):
-					if server.during_change == 0:
-						# not in config change
-						compare = 1
-						for key, item in server.matchIndex.items():
-							if key in server.peers and item >= N:
-								compare += 1
-						majority = (len(server.peers) + 1)/2 + 1
-						if compare == server.majority and server.log[N-1].term == server.currentTerm:
-							for idx in range(server.commitIndex + 1, N + 1):
-								server.poolsize -= server.log[idx-1].command
-								server.save()
-								s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-								s.sendto('Your request is fullfilled',server.log[idx-1].addr)
-								s.close()
-								print 'reply once'
-							server.commitIndex = N
-					elif server.during_change == 1:
-						majority_1 = len(server.old)/2 + 1
-						majority_2 = len(server.new)/2 + 1
-						votes_1 = 0
-						votes_2 = 0
-						if server.id in server.old:
-							votes_1 = 1
-						if server.id in server.new:
-							votes_2 = 1
-						for key, item in server.matchIndex.items():
-							if item >= N:
-								if key in server.old:
-									votes_1 += 1
-								if key in server.new:
-									votes_2 += 1
-						if votes_1 >= majority_1 and votes_2 >= majority_2 and server.log[N-1].term == server.currentTerm:
-							server.commitIndex = N
-							poolsize = server.initial_state
-							for idx in range(1, N + 1):
-								if server.log[idx-1].type == 0:
-									poolsize -= server.log[idx-1].command
-							server.poolsize = poolsize
+					# not in config change
+					compare = 1
+					for key, item in server.matchIndex.items():
+						if key in server.peers and item >= N:
+							compare += 1
+					majority = (len(server.peers) + 1)/2 + 1
+					if compare == server.majority and server.log[N-1].term == server.currentTerm:
+						for idx in range(server.commitIndex + 1, N + 1):
+							server.poolsize -= server.log[idx-1].command
 							server.save()
 							s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 							s.sendto('Your request is fullfilled',server.log[idx-1].addr)
 							s.close()
-							# print 'send old_new once'
-
-					else:
-						majority = len(server.new)/2 + 1
-						votes = 0
-						if server.id in server.new:
-							votes = 1
-						for key, item in server.matchIndex.items():
-							if item >= N:
-								if key in server.new:
-									votes += 1
-						if votes == majority and server.log[N-1].term == server.currentTerm:
-							print '----------here 2----------'
-							for idx in range(server.commitIndex + 1, N + 1):
-								if server.log[idx-1].type == 0:
-									server.poolsize -= server.log[idx-1].command
-									server.save()
-									s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-									s.sendto('Your request is fullfilled',server.log[idx-1].addr)
-									s.close()
-									server.commitIndex = idx
-								elif server.log[idx-1].type == 2:
-									server.commitIndex = idx
-									time.sleep(1)
-									if not server.id in server.new:
-										print 'I am not in the new configuration'
-										server.step_down()
-									server.during_change = 0
-									server.save()
-									s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-									s.sendto('Your request is fullfilled',server.log[idx-1].addr)
-									s.close()
-								# print 'send new once'
+							print 'reply once'
+						server.commitIndex = N
