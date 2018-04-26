@@ -139,11 +139,11 @@ class Server(object):
 			initial_running.remove(self.id)
 			serverConfig = ServerConfig(100, 0, -1, [], initial_running)
 
-		self.majority = (len(self.peers) + 1)/2 + 1
 		self.currentTerm = serverConfig.currentTerm
 		self.poolsize = serverConfig.poolsize
 		self.votedFor = serverConfig.votedFor
 		self.peers = serverConfig.peers
+		self.majority = (len(self.peers) + 1)/2 + 1
 		self.log = serverConfig.log
 
 	def run(self):
