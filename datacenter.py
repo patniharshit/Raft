@@ -38,13 +38,12 @@ class Server(object):
 		self.newPeers = []
 
 	def listen(self, on_accept):
+		print 'start listenning on port '+str(self.port)
 		srv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		srv.bind(("", self.port))
-		print 'start listenning'
 		while True:
 			data, addr = srv.recvfrom(1024)
-			thr = KThread(target=on_accept, args=(self, data, addr))
-			thr.start()
+			KThread(target=on_accept, args=(self, data, addr)).start()
 		srv.close()
 
 	def follower(self):
@@ -76,13 +75,12 @@ class Server(object):
 		print 'timouts, start a new election with term %d' % self.currentTerm
 		self.role = 'candidate'
 		self.request_votes = self.peers[:]
-		sender = self.id
 
 		while True:
 			for peer in self.peers:
 	 			if peer in self.request_votes:
 	 				Msg = str(self.lastLogTerm) + ' ' + str(self.lastLogIndex)
-	 				msg = BaseMessage(sender, peer, self.currentTerm, Msg, reqtype="RequestVote")
+	 				msg = BaseMessage(self.id, peer, self.currentTerm, Msg, reqtype="RequestVote")
 	 				data = pickle.dumps(msg)
 	 				sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 	 				sock.sendto(data, ("", self.addressbook[peer]))
@@ -125,15 +123,15 @@ class Server(object):
 			time.sleep(0.5)
 
 	def step_down(self):
+		if self.role == 'leader':
+			self.leader_state.kill()
+			self.follower_state = KThread(target = self.follower, args = ())
+			self.follower_state.start()
 		if self.role == 'candidate':
 			print 'candidate step down when higher term'
 			self.election.kill()
 			self.last_update = time.time()
 			self.role = 'follower'
-		elif self.role == 'leader':
-			self.leader_state.kill()
-			self.follower_state = KThread(target = self.follower, args = ())
-			self.follower_state.start()
 
 	def load(self):
 		initial_running = [1,2,3,4,5]
