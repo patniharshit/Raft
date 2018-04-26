@@ -35,11 +35,7 @@ class Server(object):
 
 		self.listener = KThread(target = self.listen, args= (acceptor,))
 		self.listener.start()
-
 		self.newPeers = []
-		self.new = None
-		self.old = None
-		self.during_change = 0
 
 	def listen(self, on_accept):
 		srv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -54,18 +50,15 @@ class Server(object):
 	def follower(self):
 		print 'Running as a follower'
 		self.role = 'follower'
-		self.last_update = time.time()
-		election_timeout = 5 * random.random() + 5
-		while time.time() - self.last_update <= election_timeout:
-			pass
-		self.start_election()
+		first = True
 		while True:
 			self.last_update = time.time()
 			election_timeout = 5 * random.random() + 5
 			while time.time() - self.last_update <= election_timeout:
 				pass
-			if self.election.is_alive():
+			if not first and self.election.is_alive():
 				self.election.kill()
+			first = False
 			self.start_election()
 
 	def start_election(self):
