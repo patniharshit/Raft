@@ -9,11 +9,8 @@ class Server(object):
 		self.id = id_
 		self.config_file = 'config-%d' % self.id
 
-		#self.load()
 		self.role = 'follower'
-		self.commitIndex = 0
-		self.lastApplied = 0
-		self.leaderID = 0
+		self.commitIndex, self.lastApplied, self.leaderID = 0, 0, 0
 
 		address = json.load(file('config.json'))
 		self.initial_state = address['initial_state']
@@ -24,14 +21,12 @@ class Server(object):
 		# need to put it into file later on
 		self.load()
 
+		self.lastLogIndex = 0
+		self.lastLogTerm, self.oldVotes, self.newVotes, self.numVotes = 0, 0, 0, 0
+
 		self.port = self.addressbook[self.id]
 		self.request_votes = self.peers[:]
 
-		self.numVotes = 0
-		self.oldVotes = 0
-		self.newVotes = 0
-		self.lastLogIndex = 0
-		self.lastLogTerm = 0
 
 		self.listener = KThread(target = self.listen, args= (acceptor,))
 		self.listener.start()
@@ -144,12 +139,12 @@ class Server(object):
 			initial_running.remove(self.id)
 			serverConfig = ServerConfig(100, 0, -1, [], initial_running)
 
-		self.poolsize = serverConfig.poolsize
-		self.currentTerm = serverConfig.currentTerm
-		self.votedFor = serverConfig.votedFor
-		self.log = serverConfig.log
-		self.peers = serverConfig.peers
 		self.majority = (len(self.peers) + 1)/2 + 1
+		self.currentTerm = serverConfig.currentTerm
+		self.poolsize = serverConfig.poolsize
+		self.votedFor = serverConfig.votedFor
+		self.peers = serverConfig.peers
+		self.log = serverConfig.log
 
 	def run(self):
 		time.sleep(1)
